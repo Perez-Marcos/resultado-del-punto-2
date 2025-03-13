@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perceptrón con Conjunto de Entrenamiento y Prueba</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+       #grafica{
+           width: 600px;
+           height: 400px;
+           border: solid 1px;
+       }
+</style>
+</head>
+<body>
+<h2>Perceptrón con Conjunto de Entrenamiento y Prueba</h2>
+<div id="grafica">
+<canvas id="miGrafica"></canvas>
+</div>
+<p id="salida"></p>
+<script>
+       // Generar 40 datos linealmente separables
+       function generarDatos() {
+           let datos = [];
+           for (let i = 0; i < 20; i++) {
+               let x = Math.random() * 5;
+               let y = Math.random() * 5;
+               datos.push({ x, y, clase: 0 });
+           }
+           for (let i = 0; i < 20; i++) {
+               let x = Math.random() * 5 + 5;
+               let y = Math.random() * 5 + 5;
+               datos.push({ x, y, clase: 1 });
+           }
+           return datos;
+       }
+ 
+       function dividirDatos(datos, porcentajeEntrenamiento) {
+           const tamañoEntrenamiento = Math.floor(datos.length * porcentajeEntrenamiento);
+           const datosBarajados = datos.sort(() => Math.random() - 0.5);
+           const entrenamiento = datosBarajados.slice(0, tamañoEntrenamiento);
+           const prueba = datosBarajados.slice(tamañoEntrenamiento);
+           return { entrenamiento, prueba };
+       }
+ 
+       function entrena(datos) {
+           let w = [Math.random(), Math.random()];
+           let b = Math.random();
+           const eta = 0.1;
+           const forward = (x) => (w[0] * x.x + w[1] * x.y + b) > 0 ? 1 : 0;
+ 
+           for (let epoch = 0; epoch < 100; epoch++) {
+               for (let i = 0; i < datos.length; i++) {
+                   const y_pred = forward(datos[i]);
+                   const e = datos[i].clase - y_pred;
+                   w[0] += eta * e * datos[i].x;
+                   w[1] += eta * e * datos[i].y;
+                   b += eta * e;
+               }
+           }
+ 
+           return { w0: b, w1: w[0], w2: w[1] };
+       }
+ 
+       const datos = generarDatos();
+       const { entrenamiento, prueba } = dividirDatos(datos, 0.8); // 80% entrenamiento, 20% prueba
+ 
+       let { w0, w1, w2 } = entrena(entrenamiento);
+ 
+       // Generar puntos para la recta separadora
+       let labels = [0, 10];
+       let data = labels.map(x => (-w0 - w1 * x) / w2);
+       let dataLine = [
+           { x: labels[0], y: data[0] },
+           { x: labels[1], y: data[1] }
+       ];
+ 
+       // Configuración de la gráfica
+       const config = {
+           type: 'scatter',
+           data: {
+               datasets: [
+                   {
+                       label: 'Clase 0 (Entrenamiento)',
+                       data: entrenamiento.filter(p => p.clase === 0),
+                       backgroundColor: 'red',
+                       pointRadius: 5
+                   },
+                   {
+                       label: 'Clase 1 (Entrenamiento)',
+                       data: entrenamiento.filter(p => p.clase === 1),
+                       backgroundColor: 'blue',
+                       pointRadius: 5
+                   },
+                   {
+                       label: 'Clase 0 (Prueba)',
+                       data: prueba.filter(p => p.clase === 0),
+                       backgroundColor: 'pink',
+                       pointRadius: 5,
+                       borderColor: 'pink',
+                       borderWidth: 1
+                   },
+                   {
+                       label: 'Clase 1 (Prueba)',
+                       data: prueba.filter(p => p.clase === 1),
+                       backgroundColor: 'lightblue',
+                       pointRadius: 5,
+                       borderColor: 'lightblue',
+                       borderWidth: 1
+                   },
+                   {
+                       label: 'Recta separadora',
+                       data: dataLine,
+                       borderColor: 'green',
+                       type: 'line',
+                       fill: false
+                   }
+               ]
+           },
+           options: {
+               scales: {
+                   x: { min: -1, max: 11 },
+                   y: { min: -1, max: 11 }
+               }
+           }
+       };
+ 
+       // Dibujar la gráfica
+       const ctx = document.getElementById('miGrafica').getContext('2d');
+       new Chart(ctx, config);
+       document.getElementById("salida").innerText = `Recta: ${w1}x + ${w2}y + ${w0} = 0`;
+</script>
+</body>
+</html>
